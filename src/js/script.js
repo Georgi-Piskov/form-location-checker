@@ -4,30 +4,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('locationForm');
     const resultDiv = document.getElementById('result');
 
-    form.addEventListener('submit', async function(event) {
-        event.preventDefault();
+        document.getElementById('locationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-        const name = document.getElementById('name').value;
-        const gender = document.getElementById('gender').value;
-        const age = document.getElementById('age').value;
-        const countryOfResidence = document.getElementById('country').value;
+            const name = document.getElementById('name').value.trim();
+            const gender = document.getElementById('gender').value;
+            const age = document.getElementById('age').value.trim();
+            const countryOfResidence = document.getElementById('country').value.trim();
 
-        const ipData = await fetch('https://ipwho.is/' + await getUserIP());
-        const ipLocation = await ipData.json();
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = "Checking your IP location...";
 
-        const ipCountry = ipLocation.country;
+            try {
+                // Get IP info
+                const ipRes = await fetch('https://ipwho.is/');
+                const ipData = await ipRes.json();
 
-        const isDifferentCountry = countryOfResidence !== ipCountry;
+                let ipCountry = ipData.country || "Unknown";
+                let ipCity = ipData.city || "Unknown";
+                let ipISP = ipData.connection && ipData.connection.isp ? ipData.connection.isp : "Unknown";
+                let isEU = ipData.is_eu ? "EU" : "Non-EU";
 
-        resultDiv.innerHTML = `
-            <p>Name: ${name}</p>
-            <p>Gender: ${gender}</p>
-            <p>Age: ${age}</p>
-            <p>Country of Residence: ${countryOfResidence}</p>
-            <p>IP Country: ${ipCountry}</p>
-            <p>Different Country: ${isDifferentCountry}</p>
-        `;
-    });
+                let html = "" +
+                    '<strong>Form Submission:</strong><br>' +
+                    'Name: ' + name + '<br>' +
+                    'Gender: ' + gender + '<br>' +
+                    'Age: ' + age + '<br>' +
+                    'Country of Residence: ' + countryOfResidence + '<br><br>' +
+                    '<strong>IP Location Info:</strong><br>' +
+                    'City: ' + ipCity + '<br>' +
+                    'Country: ' + ipCountry + '<br>' +
+                    'ISP: ' + ipISP + '<br>' +
+                    'Region: ' + isEU + '<br>';
+
+                if (countryOfResidence.toLowerCase() !== ipCountry.toLowerCase()) {
+                    html += '<br><span style="color:red;">⚠️ Country of residence does not match your IP country!</span>';
+                } else {
+                    html += '<br><span style="color:green;">✅ Country of residence matches your IP country.</span>';
+                }
+
+                resultDiv.innerHTML = html;
+
+            } catch (err) {
+                resultDiv.innerHTML = '<span style="color:red;">Error fetching IP location. Please try again.</span>';
+            }
+        });
 
     async function getUserIP() {
         const response = await fetch('https://api.ipify.org?format=json');
